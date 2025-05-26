@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Button from "@/app/components/Button";
+import Result from "./Result";
 
 // 試行データの型定義
 interface TrialData {
@@ -15,10 +16,10 @@ interface TrialData {
 }
 
 // 課題の設定
-const TRIAL_COUNT = 2; // 総試行数
+const TRIAL_COUNT = 3; // 総試行数
 const GO_RATIO = 0.7;   // Go試行の割合
-const STIMULUS_DURATION = 1500; // 刺激表示時間（ms）
-const ITI_DURATION = 1000; // 試行間間隔（ms）
+const STIMULUS_DURATION = 1000; // 刺激表示時間（ms）
+const ITI_DURATION = 500; // 試行間間隔（ms）
 
 export default function GoNogo() {
   const router = useRouter();
@@ -28,10 +29,15 @@ export default function GoNogo() {
   const [showStimulus, setShowStimulus] = useState(false);
   const [results, setResults] = useState<TrialData[]>([]);
   const [hasResponded, setHasResponded] = useState(false);
+  const [showResult, setShowResult] = useState(false);
 
   // 反応時間計測用
   const stimulusStartTime = useRef<number>(0);
   const trialsRef = useRef<('go' | 'nogo')[]>([]);
+  const isExecutingRef = useRef(false);
+
+  // useRefを使用してhasRespondedの状態を追跡
+  const hasRespondedRef = useRef(false);
 
   // 試行順序を生成（ランダム）
   const generateTrials = useCallback(() => {
@@ -49,52 +55,25 @@ export default function GoNogo() {
     return trials;
   }, []);
 
-  // クリックイベントハンドラー
-  const handleStimulusClick = useCallback(() => {
-    if (!isRunning || !showStimulus || hasResponded) return;
-
-    const reactionTime = Date.now() - stimulusStartTime.current;
-    const isCorrect = stimulusType === 'go';
-
-    setHasResponded(true);
-
-    // 結果を記録
-    const trialData: TrialData = {
-      trialNumber: currentTrial + 1,
-      type: stimulusType!,
-      response: true,
-      correct: isCorrect,
-      reactionTime: reactionTime,
-      timestamp: Date.now()
-    };
-
-    setResults(prev => [...prev, trialData]);
-    console.log('Trial Result:', trialData);
-  }, [isRunning, showStimulus, hasResponded, stimulusType, currentTrial]);
-
-  // 課題開始
-  const startTask = () => {
-    setIsRunning(true);
-    setCurrentTrial(0);
-    setResults([]);
-    trialsRef.current = generateTrials();
-    runNextTrial();
-  };
-
   // 次の試行を実行
   const runNextTrial = useCallback(() => {
+    if (isExecutingRef.current) return; // 実行中なら早期リターン
+    isExecutingRef.current = true;
+
     const trialType = trialsRef.current[currentTrial];
+    console.log(`Starting trial ${currentTrial + 1}: ${trialType}`);
 
     // 試行間間隔
     setTimeout(() => {
       setStimulusType(trialType);
       setShowStimulus(true);
       setHasResponded(false);
+      hasRespondedRef.current = false; // refもリセット
       stimulusStartTime.current = Date.now();
 
       // 刺激表示時間後の処理
       setTimeout(() => {
-        if (!hasResponded) {
+        if (!hasRespondedRef.current) {
           // 無反応の場合の記録
           const isCorrect = trialType === 'nogo';
           const trialData: TrialData = {
@@ -111,25 +90,75 @@ export default function GoNogo() {
         }
 
         setShowStimulus(false);
-        // 次の試行に進む前に、現在の試行数をチェック
-        setCurrentTrial(prev => {
-          const nextTrial = prev + 1;
+        
+        // 次の試行への進行処理
+        setTimeout(() => {
+          const nextTrial = currentTrial + 1;
+          
           if (nextTrial >= TRIAL_COUNT) {
             // 課題終了
+            console.log('All trials completed!');
             setIsRunning(false);
-            console.log('Task completed!');
-            router.push("/pages/result"); // 結果ページへ遷移
+            setShowResult(true);
+            isExecutingRef.current = false;
+          } else {
+            // 次の試行へ
+            setCurrentTrial(nextTrial);
+            isExecutingRef.current = false; // フラグをリセット
           }
-          return nextTrial;
-        });
+        }, 100);
       }, STIMULUS_DURATION);
     }, ITI_DURATION);
-  }, [currentTrial, hasResponded]);
+  }, [currentTrial]);
+
+  // クリックイベントハンドラー
+  const handleStimulusClick = useCallback(() => {
+    if (!isRunning || !showStimulus || hasRespondedRef.current) return;
+
+    const reactionTime = Date.now() - stimulusStartTime.current;
+    const isCorrect = stimulusType === 'go';
+
+    // refを先に更新
+    hasRespondedRef.current = true;
+    setHasResponded(true);
+
+    // 結果を記録
+    const trialData: TrialData = {
+      trialNumber: currentTrial + 1,
+      type: stimulusType!,
+      response: true,
+      correct: isCorrect,
+      reactionTime: reactionTime,
+      timestamp: Date.now()
+    };
+
+    setResults(prev => [...prev, trialData]);
+    console.log('Trial Result (Click):', trialData);
+  }, [isRunning, showStimulus, stimulusType, currentTrial]);
+
+  // 課題開始
+  const startTask = () => {
+    console.log('Starting task...');
+    setIsRunning(true);
+    setCurrentTrial(0);
+    setResults([]);
+    setShowResult(false);
+    isExecutingRef.current = false; // フラグをリセット
+    trialsRef.current = generateTrials();
+    
+    // 最初の試行を開始
+    setTimeout(() => {
+      setCurrentTrial(0);
+      runNextTrial();
+    }, 100);
+  };
 
   // 試行番号が変わったら次の試行を実行
   useEffect(() => {
-    console.log("isRunning:", isRunning, "currentTrial:", currentTrial);
-    if (isRunning && currentTrial > 0 && currentTrial < TRIAL_COUNT) {
+    console.log("useEffect triggered - isRunning:", isRunning, "currentTrial:", currentTrial, "isExecuting:", isExecutingRef.current);
+    
+    if (isRunning && currentTrial > 0 && currentTrial < TRIAL_COUNT && !isExecutingRef.current) {
+      console.log('Triggering next trial from useEffect');
       runNextTrial();
     }
   }, [currentTrial, isRunning, runNextTrial]);
@@ -142,16 +171,23 @@ export default function GoNogo() {
     }
   };
 
-  // 結果の集計
-  const correctCount = results.filter(r => r.correct).length;
-  const goTrials = results.filter(r => r.type === 'go');
-  const averageRT = goTrials.filter(r => r.response && r.reactionTime)
-    .reduce((sum, r) => sum + r.reactionTime!, 0) /
-    goTrials.filter(r => r.response && r.reactionTime).length || 0;
+  const handleReturnToProfile = () => {
+    router.push("/pages/profile");
+  };
+
+  // 結果表示の場合
+  if (showResult) {
+    return (
+      <div className="min-h-screen bg-gray-100 p-4 md:p-6">
+        <div className="max-w-6xl mx-auto">
+          <Result results={results} onReturnToProfile={handleReturnToProfile} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-100 relative">
-
       <div className="flex items-center justify-center min-h-screen p-6">
         <div className="w-full max-w-4xl">
           <h1 className="text-3xl font-bold text-center text-gray-800 mb-8">GoNogo課題</h1>
@@ -176,7 +212,7 @@ export default function GoNogo() {
             className="bg-white rounded-lg shadow-lg p-12 min-h-96 flex items-center justify-center cursor-pointer"
             onClick={isRunning && showStimulus ? handleStimulusClick : undefined}
           >
-            {!isRunning ? (
+            {!isRunning && results.length < TRIAL_COUNT ? (
               <div className="text-center">
                 <button
                   onClick={startTask}
