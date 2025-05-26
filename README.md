@@ -1,9 +1,9 @@
-This is a GoNogo project
+GoNogo課題です
 
-## Getting Started
+## 前提
+Node.jsがインストールされていること
 
-First, run the development server:
-
+## サーバー立ち上げ
 ```bash
 npm run dev
 ```
