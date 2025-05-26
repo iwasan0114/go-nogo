@@ -16,7 +16,7 @@ interface TrialData {
 }
 
 // 課題の設定
-const TRIAL_COUNT = 3; // 総試行数
+const TRIAL_COUNT = 10; // 総試行数
 const GO_RATIO = 0.7;   // Go試行の割合
 const STIMULUS_DURATION = 1000; // 刺激表示時間（ms）
 const ITI_DURATION = 500; // 試行間間隔（ms）

@@ -79,9 +79,7 @@ export default function Profile() {
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mt-6">
               <h3 className="font-semibold text-yellow-800 mb-2">重要なポイント</h3>
               <ul className="text-sm text-yellow-700 space-y-1">
-                <li>• 枠内であればどこをクリックしても反応として記録されます</li>
-                <li>• できるだけ速く、正確に反応してください</li>
-                <li>• 円が消えた後のクリックは無効です</li>
+                <li className="font-bold">• できるだけ速く、正確に反応してください</li>
               </ul>
             </div>
           </div>
