@@ -28,7 +28,6 @@ export default function GoNogo() {
   const [stimulusType, setStimulusType] = useState<'go' | 'nogo' | null>(null);
   const [showStimulus, setShowStimulus] = useState(false);
   const [results, setResults] = useState<TrialData[]>([]);
-  const [hasResponded, setHasResponded] = useState(false);
   const [showResult, setShowResult] = useState(false);
 
   // 反応時間計測用

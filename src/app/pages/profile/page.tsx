@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 import Description from "./description";
-import Textbox, { TextboxProps } from "@/app/components/Textbox";
+// import Textbox, { TextboxProps } from "@/app/components/Textbox";
 import Button, { ButtonProps } from "@/app/components/Button";
 import { useRouter } from "next/navigation";
 
