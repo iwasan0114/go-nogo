@@ -66,7 +66,6 @@ export default function GoNogo() {
     setTimeout(() => {
       setStimulusType(trialType);
       setShowStimulus(true);
-      setHasResponded(false);
       hasRespondedRef.current = false; // refもリセット
       stimulusStartTime.current = Date.now();
 
@@ -118,9 +117,8 @@ export default function GoNogo() {
     const isCorrect = stimulusType === 'go';
 
     // refを先に更新
+    // refを先に更新
     hasRespondedRef.current = true;
-    setHasResponded(true);
-
     // 結果を記録
     const trialData: TrialData = {
       trialNumber: currentTrial + 1,
